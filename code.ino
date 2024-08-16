@@ -17,11 +17,16 @@ bool winner = false;
 bool loser = false;
 int correctSpots = 0;
 int difficulty;
-
+int currentSlot = 0;
+int currentGuess = 0;
+int correct = 0;
+int wrongSpot = 0;
+int currentHint = 0;
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 Adafruit_NeoPixel pixels(28, slotLEDS, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel picking(4, selectionLEDS, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel answerLED(4, answerLEDS, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   pinMode(leftButton, INPUT);
@@ -29,11 +34,15 @@ void setup() {
   pinMode(rightButton, INPUT);
   pinMode(selectionLEDS, OUTPUT);
   pinMode(slotLEDS, OUTPUT);
+  pinMode(answerButton, INPUT);
+  pinMode(upButton, INPUT);
+  pinMode(downButton, INPUT);
   
   lcd.init();
   lcd.backlight();
   pixels.begin();
   answerLED.begin();
+  randomSeed(analogRead(0));
 }
 
 void loop() {
@@ -141,6 +150,59 @@ void loop() {
     }
   }
 
+  if(digitalRead(middleButton) == 1) {
+    switch(difficulty) {
+      case 1:
+        if(selectionLED[currentSlot] < 4) {
+          selectionLED[currentSlot]++;
+          delay(200);
+        }
+        if(selectionLED[currentSlot] == 4) {
+          selectionLED[currentSlot] = 0;
+        }
+        break;
+      case 2:
+        if(selectionLED[currentSlot] < 6) {
+          selectionLED[currentSlot]++;
+          delay(200);
+        }
+        if(selectionLED[currentSlot] == 6) {
+          selectionLED[currentSlot] = 0;
+        }
+        break;
+      case 3:
+        if(selectionLED[currentSlot] < 8) {
+          selectionLED[currentSlot]++;
+          delay(200);
+        }
+        if(selectionLED[currentSlot] == 8) {
+          selectionLED[currentSlot] = 0;
+        }
+        break;
+    }
+    updateSelection();
+  }
+
+  if(selectDifficulty != true) {
+    switch(currentSlot) {
+      case 0:
+        lcd.setCursor(0,1);
+        lcd.print("()");
+        break;
+      case 1:
+        lcd.setCursor(4,1);
+        lcd.print("()");
+        break;
+      case 2:
+        lcd.setCursor(9,1);
+        lcd.print("()");
+        break;
+      case 3:
+        lcd.setCursor(14,1);
+        lcd.print("()");
+        break;
+    }
+  }
 
   if(digitalRead(answerButton) == 1) {
     dropGuess();
