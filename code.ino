@@ -70,28 +70,77 @@ void loop() {
       resetGuesses();
     }
 
-    
+    if(digitalRead(middleButton) == 1) {
+      difficulty = 2;
+      selectDifficulty = false;
+      lcd.clear();
+      for(int i = 0; i < 4; i++) {
+        selectionLED[i] = 0;
+        answer[i] = random(6);
+        if(i == 1) {
+          while(answer[i] == answer[i-1]) {
+            answer[i] = random(6);
+          }
+        }
+        if(i == 2) {
+          while(answer[i] == answer[i-2] || answer[i] == answer[i-1]) {
+            answer[i] = random(6);
+          }
+        }
+        if(i == 3) {
+          while(answer[i] == answer[i-3] || answer[i] == answer[i-2] || answer[i] == answer[i-1]) {
+            answer[i] = random(6);
+          }
+        }
+      }
+      updateSelection();
+      resetGuesses();
+    }
 
-  if(selectDifficulty != true) {
-    switch(currentSlot) {
-      case 0:
-        lcd.setCursor(0,1);
-        lcd.print("()");
-        break;
-      case 1:
-        lcd.setCursor(4,1);
-        lcd.print("()");
-        break;
-      case 2:
-        lcd.setCursor(9,1);
-        lcd.print("()");
-        break;
-      case 3:
-        lcd.setCursor(14,1);
-        lcd.print("()");
-        break;
+    if(digitalRead(rightButton) == 1) {
+      difficulty = 3;
+      selectDifficulty = false;
+      lcd.clear();
+      for(int i = 0; i < 4; i++) {
+        selectionLED[i] = 0;
+        answer[i] = random(8);
+        if(i == 1) {
+          while(answer[i] == answer[i-1]) {
+            answer[i] = random(8);
+          }
+        }
+        if(i == 2) {
+          while(answer[i] == answer[i-2] || answer[i] == answer[i-1]) {
+            answer[i] = random(8);
+          }
+        }
+        if(i == 3) {
+          while(answer[i] == answer[i-3] || answer[i] == answer[i-2] || answer[i] == answer[i-1]) {
+            answer[i] = random(8);
+          }
+        }
+      }
+      updateSelection();
+      resetGuesses();
     }
   }
+
+  if(digitalRead(leftButton) == 1) {
+    if(currentSlot > 0) {
+      currentSlot--;
+      lcd.clear();
+      delay(200);
+    }
+  }
+
+  if(digitalRead(rightButton) == 1) {
+    if(currentSlot < 3) {
+      currentSlot++;
+      lcd.clear();
+      delay(200);
+    }
+  }
+
 
   if(digitalRead(answerButton) == 1) {
     dropGuess();
@@ -213,4 +262,50 @@ void dropGuess() {
 
   updateSelection();
   updateHint();
+}
+
+void resetGuesses() {
+  for(int i = 0; i < 7; i++) {
+    for(int j = 0; j < 4; j++) {
+      slotLED[i][j] = 0;
+    }
+    guessHint[i][0] = 0;
+    guessHint[i][1] = 0;
+  }
+  currentSlot = 0;
+  currentGuess = 0;
+}
+
+void updateHint() {
+  lcd.clear();
+  for(int i = 0; i < currentGuess; i++) {
+    lcd.setCursor(0,i);
+    lcd.print(guessHint[i][0]);
+    lcd.setCursor(1,i);
+    lcd.print("-");
+    lcd.setCursor(2,i);
+    lcd.print(guessHint[i][1]);
+  }
+
+  if(correctSpots == 4) {
+    winner = true;
+  }
+}
+
+void winScreen() {
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("You won!");
+  lcd.setCursor(0,1);
+  lcd.print("Congrats!");
+  while(true);
+}
+
+void loseScreen() {
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Game Over");
+  lcd.setCursor(0,1);
+  lcd.print("Try again!");
+  while(true);
 }
