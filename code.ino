@@ -5,16 +5,25 @@
 #define middleButton 5
 #define rightButton 6
 #define selectionLEDS 9
-
+#define slotLEDS 7
+#define answerLEDS 8
+#define answerButton 3
+#define upButton 2
+#define downButton 1
+#define hintButton 10
 
 int slotLED[7][4];
 int selectionLED[4];
 int answer[4];
 int guessHint[7][2];
+int score = 0; 
+unsigned long guessTimeLimit = 10000;
+unsigned long guessStartTime = 0;
 
 bool selectDifficulty = true;
 bool winner = false;
 bool loser = false;
+bool hintUsed = false;
 int correctSpots = 0;
 int difficulty;
 int currentSlot = 0;
@@ -37,6 +46,7 @@ void setup() {
   pinMode(answerButton, INPUT);
   pinMode(upButton, INPUT);
   pinMode(downButton, INPUT);
+  pinMode(hintButton, INPUT);  
   
   lcd.init();
   lcd.backlight();
@@ -56,25 +66,7 @@ void loop() {
       difficulty = 1;
       selectDifficulty = false;
       lcd.clear();
-      for(int i = 0; i < 4; i++) {
-        selectionLED[i] = 0;
-        answer[i] = random(4);
-        if(i == 1) {
-          while(answer[i] == answer[i-1]) {
-            answer[i] = random(4);
-          }
-        }
-        if(i == 2) {
-          while(answer[i] == answer[i-2] || answer[i] == answer[i-1]) {
-            answer[i] = random(4);
-          }
-        }
-        if(i == 3) {
-          while(answer[i] == answer[i-3] || answer[i] == answer[i-2] || answer[i] == answer[i-1]) {
-            answer[i] = random(4);
-          }
-        }
-      }
+      generateAnswer(4); 
       updateSelection();
       resetGuesses();
     }
@@ -83,25 +75,7 @@ void loop() {
       difficulty = 2;
       selectDifficulty = false;
       lcd.clear();
-      for(int i = 0; i < 4; i++) {
-        selectionLED[i] = 0;
-        answer[i] = random(6);
-        if(i == 1) {
-          while(answer[i] == answer[i-1]) {
-            answer[i] = random(6);
-          }
-        }
-        if(i == 2) {
-          while(answer[i] == answer[i-2] || answer[i] == answer[i-1]) {
-            answer[i] = random(6);
-          }
-        }
-        if(i == 3) {
-          while(answer[i] == answer[i-3] || answer[i] == answer[i-2] || answer[i] == answer[i-1]) {
-            answer[i] = random(6);
-          }
-        }
-      }
+      generateAnswer(6);
       updateSelection();
       resetGuesses();
     }
@@ -110,25 +84,7 @@ void loop() {
       difficulty = 3;
       selectDifficulty = false;
       lcd.clear();
-      for(int i = 0; i < 4; i++) {
-        selectionLED[i] = 0;
-        answer[i] = random(8);
-        if(i == 1) {
-          while(answer[i] == answer[i-1]) {
-            answer[i] = random(8);
-          }
-        }
-        if(i == 2) {
-          while(answer[i] == answer[i-2] || answer[i] == answer[i-1]) {
-            answer[i] = random(8);
-          }
-        }
-        if(i == 3) {
-          while(answer[i] == answer[i-3] || answer[i] == answer[i-2] || answer[i] == answer[i-1]) {
-            answer[i] = random(8);
-          }
-        }
-      }
+      generateAnswer(8);
       updateSelection();
       resetGuesses();
     }
@@ -151,61 +107,19 @@ void loop() {
   }
 
   if(digitalRead(middleButton) == 1) {
-    switch(difficulty) {
-      case 1:
-        if(selectionLED[currentSlot] < 4) {
-          selectionLED[currentSlot]++;
-          delay(200);
-        }
-        if(selectionLED[currentSlot] == 4) {
-          selectionLED[currentSlot] = 0;
-        }
-        break;
-      case 2:
-        if(selectionLED[currentSlot] < 6) {
-          selectionLED[currentSlot]++;
-          delay(200);
-        }
-        if(selectionLED[currentSlot] == 6) {
-          selectionLED[currentSlot] = 0;
-        }
-        break;
-      case 3:
-        if(selectionLED[currentSlot] < 8) {
-          selectionLED[currentSlot]++;
-          delay(200);
-        }
-        if(selectionLED[currentSlot] == 8) {
-          selectionLED[currentSlot] = 0;
-        }
-        break;
-    }
-    updateSelection();
+    cycleColor(); 
   }
 
   if(selectDifficulty != true) {
-    switch(currentSlot) {
-      case 0:
-        lcd.setCursor(0,1);
-        lcd.print("()");
-        break;
-      case 1:
-        lcd.setCursor(4,1);
-        lcd.print("()");
-        break;
-      case 2:
-        lcd.setCursor(9,1);
-        lcd.print("()");
-        break;
-      case 3:
-        lcd.setCursor(14,1);
-        lcd.print("()");
-        break;
-    }
+    displayCursor();
   }
 
-  if(digitalRead(answerButton) == 1) {
+  if(digitalRead(answerButton) == 1 || millis() - guessStartTime > guessTimeLimit) {
     dropGuess();
+  }
+
+  if(digitalRead(hintButton) == 1 && !hintUsed) {
+    giveHint();
   }
 
   updateHint();
@@ -219,109 +133,71 @@ void loop() {
   }
 }
 
-void updateSelection() {
+void generateAnswer(int colorRange) {
   for(int i = 0; i < 4; i++) {
-    switch(selectionLED[i]) {
-      case 0:
-        picking.setPixelColor(i, pixels.Color(90, 90, 90));
-        break;
-      case 1:
-        picking.setPixelColor(i, pixels.Color(240, 0, 0));
-        break;
-      case 2:
-        picking.setPixelColor(i, pixels.Color(0, 240, 0));
-        break;
-      case 3:
-        picking.setPixelColor(i, pixels.Color(0, 0, 240));
-        break;
-      case 4:
-        picking.setPixelColor(i, pixels.Color(0, 140, 140));
-        break;
-      case 5:
-        picking.setPixelColor(i, pixels.Color(140, 0, 140));
-        break;
-      case 6:
-        picking.setPixelColor(i, pixels.Color(140, 140, 0));
-        break;
-      case 7:
-        picking.setPixelColor(i, pixels.Color(140, 45, 75));
-        break;
-    }
-
-    for(int i = 0; i < 4; i++) {
-      switch(answer[i]) {
-        case 0:
-          answerLED.setPixelColor(i, pixels.Color(90, 90, 90));
-          break;
-        case 1:
-          answerLED.setPixelColor(i, pixels.Color(240, 0, 0));
-          break;
-        case 2:
-          answerLED.setPixelColor(i, pixels.Color(0, 240, 0));
-          break;
-        case 3:
-          answerLED.setPixelColor(i, pixels.Color(0, 0, 240));
-          break;
-        case 4:
-          answerLED.setPixelColor(i, pixels.Color(0, 140, 140));
-          break;
-        case 5:
-          answerLED.setPixelColor(i, pixels.Color(140, 0, 140));
-          break;
-        case 6:
-          answerLED.setPixelColor(i, pixels.Color(140, 140, 0));
-          break;
-        case 7:
-          answerLED.setPixelColor(i, pixels.Color(140, 45, 75));
-          break;
+    selectionLED[i] = 0;
+    answer[i] = random(colorRange);
+    for(int j = 0; j < i; j++) {
+      while(answer[i] == answer[j]) {
+        answer[i] = random(colorRange);
       }
     }
   }
-  picking.show();
-  answerLED.show();
+}
+
+void cycleColor() {
+  switch(difficulty) {
+    case 1:
+      selectionLED[currentSlot] = (selectionLED[currentSlot] + 1) % 4;
+      break;
+    case 2:
+      selectionLED[currentSlot] = (selectionLED[currentSlot] + 1) % 6;
+      break;
+    case 3:
+      selectionLED[currentSlot] = (selectionLED[currentSlot] + 1) % 8;
+      break;
+  }
+  updateSelection();
+}
+
+void displayCursor() {
+  lcd.clear();
+  lcd.setCursor(currentSlot * 5, 1);
+  lcd.print("()");
 }
 
 void dropGuess() {
+  guessStartTime = millis();  
   for(int i = 0; i < 4; i++) {
     slotLED[currentGuess][i] = selectionLED[i];
     if(selectionLED[i] == answer[i]) {
       correct++;
+      score += 10;  
     }
   }
   guessHint[currentGuess][0] = correct;
 
-  if(selectionLED[0] == answer[1] || selectionLED[0] == answer[2] || selectionLED[0] == answer[3]) {
-    wrongSpot++;
-  }
-  if(selectionLED[1] == answer[0] || selectionLED[1] == answer[2] || selectionLED[1] == answer[3]) {
-    wrongSpot++;
-  }
-  if(selectionLED[2] == answer[1] || selectionLED[2] == answer[0] || selectionLED[2] == answer[3]) {
-    wrongSpot++;
-  }
-  if(selectionLED[3] == answer[1] || selectionLED[3] == answer[2] || selectionLED[3] == answer[0]) {
-    wrongSpot++;
-  }
-
-  guessHint[currentGuess][1] = wrongSpot;
-
-  correctSpots = 0;
   for(int i = 0; i < 4; i++) {
-    if(selectionLED[i] == answer[i]) {
-      correctSpots++;
+    for(int j = 0; j < 4; j++) {
+      if(i != j && selectionLED[i] == answer[j]) {
+        wrongSpot++;
+        score += 5;  
+      }
     }
   }
+  guessHint[currentGuess][1] = wrongSpot;
 
-  if(currentGuess != 6) {
+  if(correct == 4) {
+    winner = true;
+  } else if(currentGuess == 6) {
+    loser = true;
+  } else {
     currentGuess++;
     currentSlot = 0;
-  } else {
-    loser = true;
   }
 
   correct = 0;
   wrongSpot = 0;
-
   updateSelection();
   updateHint();
 }
@@ -336,38 +212,55 @@ void resetGuesses() {
   }
   currentSlot = 0;
   currentGuess = 0;
+  guessStartTime = millis();
+  score = 0;
 }
 
 void updateHint() {
   lcd.clear();
   for(int i = 0; i < currentGuess; i++) {
-    lcd.setCursor(0,i);
+    lcd.setCursor(0, i);
     lcd.print(guessHint[i][0]);
-    lcd.setCursor(1,i);
+    lcd.setCursor(1, i);
     lcd.print("-");
-    lcd.setCursor(2,i);
+    lcd.setCursor(2, i);
     lcd.print(guessHint[i][1]);
   }
 
-  if(correctSpots == 4) {
-    winner = true;
+  lcd.setCursor(12, 0);
+  lcd.print("Score:");
+  lcd.setCursor(12, 1);
+  lcd.print(score);
+}
+
+void giveHint() {
+  hintUsed = true;
+  for(int i = 0; i < 4; i++) {
+    if(selectionLED[i] != answer[i]) {
+      selectionLED[i] = answer[i];
+      score -= 20; 
+      updateSelection();
+      break;
+    }
   }
 }
 
 void winScreen() {
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("You won!");
-  lcd.setCursor(0,1);
-  lcd.print("Congrats!");
+  lcd.setCursor(0, 1);
+  lcd.print("Score: ");
+  lcd.print(score);
   while(true);
 }
 
 void loseScreen() {
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(0, 0);
   lcd.print("Game Over");
-  lcd.setCursor(0,1);
-  lcd.print("Try again!");
+  lcd.setCursor(0, 1);
+  lcd.print("Score: ");
+  lcd.print(score);
   while(true);
 }
