@@ -107,3 +107,110 @@ void loop() {
     loseScreen();
   }
 }
+
+void updateSelection() {
+  for(int i = 0; i < 4; i++) {
+    switch(selectionLED[i]) {
+      case 0:
+        picking.setPixelColor(i, pixels.Color(90, 90, 90));
+        break;
+      case 1:
+        picking.setPixelColor(i, pixels.Color(240, 0, 0));
+        break;
+      case 2:
+        picking.setPixelColor(i, pixels.Color(0, 240, 0));
+        break;
+      case 3:
+        picking.setPixelColor(i, pixels.Color(0, 0, 240));
+        break;
+      case 4:
+        picking.setPixelColor(i, pixels.Color(0, 140, 140));
+        break;
+      case 5:
+        picking.setPixelColor(i, pixels.Color(140, 0, 140));
+        break;
+      case 6:
+        picking.setPixelColor(i, pixels.Color(140, 140, 0));
+        break;
+      case 7:
+        picking.setPixelColor(i, pixels.Color(140, 45, 75));
+        break;
+    }
+
+    for(int i = 0; i < 4; i++) {
+      switch(answer[i]) {
+        case 0:
+          answerLED.setPixelColor(i, pixels.Color(90, 90, 90));
+          break;
+        case 1:
+          answerLED.setPixelColor(i, pixels.Color(240, 0, 0));
+          break;
+        case 2:
+          answerLED.setPixelColor(i, pixels.Color(0, 240, 0));
+          break;
+        case 3:
+          answerLED.setPixelColor(i, pixels.Color(0, 0, 240));
+          break;
+        case 4:
+          answerLED.setPixelColor(i, pixels.Color(0, 140, 140));
+          break;
+        case 5:
+          answerLED.setPixelColor(i, pixels.Color(140, 0, 140));
+          break;
+        case 6:
+          answerLED.setPixelColor(i, pixels.Color(140, 140, 0));
+          break;
+        case 7:
+          answerLED.setPixelColor(i, pixels.Color(140, 45, 75));
+          break;
+      }
+    }
+  }
+  picking.show();
+  answerLED.show();
+}
+
+void dropGuess() {
+  for(int i = 0; i < 4; i++) {
+    slotLED[currentGuess][i] = selectionLED[i];
+    if(selectionLED[i] == answer[i]) {
+      correct++;
+    }
+  }
+  guessHint[currentGuess][0] = correct;
+
+  if(selectionLED[0] == answer[1] || selectionLED[0] == answer[2] || selectionLED[0] == answer[3]) {
+    wrongSpot++;
+  }
+  if(selectionLED[1] == answer[0] || selectionLED[1] == answer[2] || selectionLED[1] == answer[3]) {
+    wrongSpot++;
+  }
+  if(selectionLED[2] == answer[1] || selectionLED[2] == answer[0] || selectionLED[2] == answer[3]) {
+    wrongSpot++;
+  }
+  if(selectionLED[3] == answer[1] || selectionLED[3] == answer[2] || selectionLED[3] == answer[0]) {
+    wrongSpot++;
+  }
+
+  guessHint[currentGuess][1] = wrongSpot;
+
+  correctSpots = 0;
+  for(int i = 0; i < 4; i++) {
+    if(selectionLED[i] == answer[i]) {
+      correctSpots++;
+    }
+  }
+
+  if(currentGuess != 6) {
+    currentGuess++;
+    currentSlot = 0;
+  } else {
+    loser = true;
+  }
+
+  correct = 0;
+  wrongSpot = 0;
+
+  updateSelection();
+  updateHint();
+}
